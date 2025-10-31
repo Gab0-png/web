@@ -21,6 +21,7 @@ app = FastAPI(
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Configurar plantillas Jinja2
+# ¡ESTA LÍNEA CONFIRMA EL USO DE LA CARPETA 'templates'!
 templates = Jinja2Templates(directory="templates")
 
 # ============================================================================
@@ -70,6 +71,7 @@ async def home(request: Request):
     """
     Ruta principal que renderiza la página de inicio (index.html).
     """
+    # Aquí se usa el template de la carpeta 'templates'
     return templates.TemplateResponse("index.html", {"request": request})
 
 @app.post("/send_email")
