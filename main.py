@@ -1,7 +1,6 @@
 import os
 import smtplib
 from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart # ### CAMBIO 1: Importar MIMEMultipart
 from fastapi import FastAPI, Form, Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -21,7 +20,6 @@ app = FastAPI(
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Configurar plantillas Jinja2
-# ¡ESTA LÍNEA CONFIRMA EL USO DE LA CARPETA 'templates'!
 templates = Jinja2Templates(directory="templates")
 
 # ============================================================================
@@ -29,31 +27,27 @@ templates = Jinja2Templates(directory="templates")
 # ============================================================================
 
 # Datos del remitente (tu cuenta de Gmail)
+# Se usa EMAIL_ADDRESS en lugar de EMAIL_ORIGEN
 EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS", "gabito150906@gmail.com") 
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD") 
 
-# ### CAMBIO 2: Añadir 'reply_to_email' como nuevo argumento ###
-def send_email(to_email: str, subject: str, message_body: str, reply_to_email: str) -> bool:
+def send_email(to_email: str, subject: str, message_body: str) -> bool:
     """
     Envía un correo utilizando SMTP de Gmail.
     """
     try:
-        # Usar MIMEMultipart en lugar de MIMEText
-        msg = MIMEMultipart() 
-        
-        # ### CAMBIO 3: Configurar encabezados del mensaje ###
+        if not EMAIL_ADDRESS or not EMAIL_PASSWORD:
+            print("Error: Faltan las credenciales de correo (variables de entorno).")
+            return False
+            
+        msg = MIMEText(message_body, "plain", "utf-8")
         msg["Subject"] = subject
         msg["From"] = EMAIL_ADDRESS
         msg["To"] = to_email
-        msg["Reply-To"] = reply_to_email # <-- Esto hace que al "Responder", se use el correo del usuario
-        
-        # Adjuntar el cuerpo del mensaje como texto simple
-        msg.attach(MIMEText(message_body, "plain", "utf-8"))
 
         # Conexión segura con Gmail SMTP
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-            # send_message funciona para MIMEText y MIMEMultipart
             server.send_message(msg)
 
         print(f"Correo enviado exitosamente a {to_email}")
@@ -71,7 +65,6 @@ async def home(request: Request):
     """
     Ruta principal que renderiza la página de inicio (index.html).
     """
-    # Aquí se usa el template de la carpeta 'templates'
     return templates.TemplateResponse("index.html", {"request": request})
 
 @app.post("/send_email")
@@ -95,13 +88,6 @@ async def send_email_endpoint(
             content={"success": False, "message": "Email inválido"}
         )
 
-    # Verifica si las credenciales están disponibles
-    if not EMAIL_ADDRESS or not EMAIL_PASSWORD:
-        return JSONResponse(
-            status_code=500,
-            content={"success": False, "message": "Faltan credenciales del servidor (variables de entorno)"}
-        )
-    
     message_body = f"""
 Nuevo mensaje de contacto desde tu portafolio web:
 
@@ -112,12 +98,11 @@ Mensaje:
 {mensaje}
 """
 
-    # ### CAMBIO 4: Pasar el correo del usuario como argumento 'reply_to_email' ###
+    # Envía el correo a ti mismo
     success = send_email(
-        to_email=EMAIL_ADDRESS, # Tu Gmail
+        to_email=EMAIL_ADDRESS,
         subject=f"Nuevo mensaje de {nombre}",
-        message_body=message_body,
-        reply_to_email=email # Correo del usuario
+        message_body=message_body
     )
 
     if success:
@@ -138,4 +123,5 @@ Mensaje:
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
 
