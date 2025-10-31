@@ -1,4 +1,21 @@
 {
+  "version": 2,
+  "framework": "fastapi",
   "buildCommand": "pip install -r requirements.txt",
-  "framework": "fastapi"
+  "builds": [
+    {
+      "src": "main.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/static/(.*)",
+      "dest": "/static/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "main.py"
+    }
+  ]
 }
