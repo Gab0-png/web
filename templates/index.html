@@ -105,9 +105,9 @@
 
             <aside class="profile" aria-label="Tarjeta de perfil">
                 <div class="avatar">
-                    <!-- RUTA CORREGIDA: Ahora apunta a la ruta estática /static -->
-                    <img src="/static/img1.jpeg" alt="Foto de perfil — Gabriel Gomez" onerror="this.style.display='none'">
-                    <span style="display: none;"></span>
+                    <!-- RUTA CRÍTICA: /static/img1.jpeg -->
+                    <!-- ¡QUITAMOS EL ONERROR! Si la imagen no carga, veremos el icono de imagen rota. -->
+                    <img src="/static/img1.jpeg" alt="Foto de perfil — Gabriel Gomez">
                 </div>
                 <h3>Gabriel Gomez</h3>
                 <p>Desarrollador Backend · Python</p>
