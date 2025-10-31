@@ -52,6 +52,9 @@ def send_email(to_email: str, subject: str, message_body: str) -> bool:
 
         print(f"Correo enviado exitosamente a {to_email}")
         return True
+    except smtplib.AuthenticationError:
+        print("Error de autenticación: Verifica tu EMAIL_PASSWORD (Contraseña de Aplicación de 16 dígitos) y que 2FA esté activa en tu cuenta de Google.")
+        return False
     except Exception as e:
         print(f"Error al enviar correo: {e}")
         return False
@@ -113,7 +116,7 @@ Mensaje:
     else:
         return JSONResponse(
             status_code=500,
-            content={"success": False, "message": "Error al enviar el correo"}
+            content={"success": False, "message": "Error al enviar el correo. Revisa los logs de Vercel."}
         )
 
 # ============================================================================
@@ -123,6 +126,3 @@ Mensaje:
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-
-
-
