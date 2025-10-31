@@ -16,6 +16,9 @@ app = FastAPI(
     version="2.0.0"
 )
 
+# Esto es un cambio sin significado, solo para forzar un nuevo deployment limpio en Vercel
+print("Iniciando aplicación con la configuración de estáticos verificada.")
+
 # Montar archivos estáticos (CSS, JS, imágenes)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
