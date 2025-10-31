@@ -1,6 +1,7 @@
 import os
 import smtplib
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart # ### CAMBIO 1: Importar MIMEMultipart
 from fastapi import FastAPI, Form, Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -27,22 +28,31 @@ templates = Jinja2Templates(directory="templates")
 # ============================================================================
 
 # Datos del remitente (tu cuenta de Gmail)
-EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS", "gabito150906@gmail.com")  # <-- tu Gmail
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")  # Contraseña de aplicación
+EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS", "gabito150906@gmail.com") 
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD") 
 
-def send_email(to_email: str, subject: str, message_body: str) -> bool:
+# ### CAMBIO 2: Añadir 'reply_to_email' como nuevo argumento ###
+def send_email(to_email: str, subject: str, message_body: str, reply_to_email: str) -> bool:
     """
     Envía un correo utilizando SMTP de Gmail.
     """
     try:
-        msg = MIMEText(message_body, "plain", "utf-8")
+        # Usar MIMEMultipart en lugar de MIMEText
+        msg = MIMEMultipart() 
+        
+        # ### CAMBIO 3: Configurar encabezados del mensaje ###
         msg["Subject"] = subject
         msg["From"] = EMAIL_ADDRESS
         msg["To"] = to_email
+        msg["Reply-To"] = reply_to_email # <-- Esto hace que al "Responder", se use el correo del usuario
+        
+        # Adjuntar el cuerpo del mensaje como texto simple
+        msg.attach(MIMEText(message_body, "plain", "utf-8"))
 
         # Conexión segura con Gmail SMTP
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            # send_message funciona para MIMEText y MIMEMultipart
             server.send_message(msg)
 
         print(f"Correo enviado exitosamente a {to_email}")
@@ -83,6 +93,13 @@ async def send_email_endpoint(
             content={"success": False, "message": "Email inválido"}
         )
 
+    # Verifica si las credenciales están disponibles
+    if not EMAIL_ADDRESS or not EMAIL_PASSWORD:
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": "Faltan credenciales del servidor (variables de entorno)"}
+        )
+    
     message_body = f"""
 Nuevo mensaje de contacto desde tu portafolio web:
 
@@ -93,11 +110,12 @@ Mensaje:
 {mensaje}
 """
 
-    # Envía el correo a ti mismo
+    # ### CAMBIO 4: Pasar el correo del usuario como argumento 'reply_to_email' ###
     success = send_email(
-        to_email=EMAIL_ADDRESS,
+        to_email=EMAIL_ADDRESS, # Tu Gmail
         subject=f"Nuevo mensaje de {nombre}",
-        message_body=message_body
+        message_body=message_body,
+        reply_to_email=email # Correo del usuario
     )
 
     if success:
